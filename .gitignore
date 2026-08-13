@@ -1,0 +1,9 @@
+.vscode
+.vscode/*
+
+app/bin/
+app/obj/
+
+*.hx
+*.cx
+

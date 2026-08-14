@@ -1,4 +1,4 @@
-[submodule "common/tinyusb"]
-	path = common/tinyusb
+[submodule "fw/common/tinyusb"]
+	path = fw/common/tinyusb
 	url = https://github.com/hathach/tinyusb.git
 	branch = 0.17.0

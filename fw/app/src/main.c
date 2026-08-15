@@ -1,6 +1,7 @@
 #include "stm32f4xx.h"
 #include "osc.h"
 #include "tusb.h"
+#include "pulse.h"
 
 static void usb_hw_init(void) {
     RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
@@ -30,6 +31,7 @@ static void usb_hw_init(void) {
 int main(void) {
     osc_config();
     usb_hw_init();
+    pulse_timer_init();
     tusb_init();
 
     while (1) {

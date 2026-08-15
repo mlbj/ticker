@@ -1,5 +1,7 @@
 #include "scpi/types.h"
 #include "scpi/ieee488.h"
+#include "scpi/parser.h"
+#include "pulse.h"
 
 scpi_result_t scpi_pulse_frequency(scpi_t * context);
 scpi_result_t scpi_pulse_width(scpi_t * context);

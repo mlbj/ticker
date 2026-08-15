@@ -32,6 +32,15 @@ int main(void) {
     osc_config();
     usb_hw_init();
     pulse_timer_init();
+
+    /* TODO: remove once SCPI_Init/SCPI_Input are wired to USB CDC.
+     * Hardcoded here to scope PA8 (TIM1_CH1) directly: 10kHz, 50% duty.
+     * (1kHz isn't reachable at PSC=0: ARR would need 95999, over the
+     * 16-bit register's 65535 max -- valid floor is ~1465Hz.) */
+    pulse_set_frequency(10000.0);
+    pulse_set_width(0.00005);
+    pulse_set_output(true);
+
     tusb_init();
 
     while (1) {

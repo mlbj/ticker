@@ -94,7 +94,6 @@
 
 // Function prototypes
 void osc_config(void);
-void osc_request_hse(void);
 void osc_hse_debug(void);
 
 // _OSC_H

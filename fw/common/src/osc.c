@@ -69,7 +69,9 @@ void osc_config(void) {
     (void)tmp;
 
     // 3. Configure Flash prefetch, Instruction cache, Data cache.
-    FLASH->ACR |= FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_PRFTEN;
+    // Latency must go up before SYSCLK does: 3WS is required above 90MHz
+    // (F411 datasheet, VDD 2.7-3.6V range) for the 96MHz target below.
+    FLASH->ACR |= FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_PRFTEN | FLASH_ACR_LATENCY_3WS;
 
     // 4. Enable HSE and wait until it's ready, or bail out if it never locks
     RCC->CR |= RCC_CR_HSEON;
@@ -116,21 +118,15 @@ void osc_config(void) {
     RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_PPRE2) | (RCC_HCLK_DIV16 << 3);
 
     RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_HPRE) | RCC_SYSCLK_DIV1;
-    RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW) | RCC_SYSCLKSOURCE_HSE;
+    RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW) | RCC_SYSCLKSOURCE_PLLCLK;
 
-    while ((RCC->CFGR & RCC_CFGR_SWS) != (RCC_SYSCLKSOURCE_HSE << RCC_CFGR_SWS_Pos)) {}
+    while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL) {}
 
-    // Decreasing the number of wait states because of lower CPU frequency
-    if (FLASH_LATENCY_0 < FLASH->ACR & FLASH_ACR_LATENCY) {
-        // Program the new number of wait states to the LATENCY bits in the FLASH_ACR register
-        (*(__IO uint8_t *)ACR_BYTE0_ADDRESS = (uint8_t)(FLASH_LATENCY_0));
-    }
-
-    // PCLK1 Configuration
-    RCC->CFGR = RCC->CFGR & ~RCC_CFGR_PPRE1 | RCC_HCLK_DIV1;
+    // PCLK1 Configuration (APB1 <= 50 MHz max, so /2 from a 96 MHz HCLK)
+    RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_PPRE1) | RCC_HCLK_DIV2;
 
     // PCLK2 Configuration
-    RCC->CFGR = RCC->CFGR & RCC_CFGR_PPRE2 | RCC_HCLK_DIV1 << 3U;
+    RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_PPRE2) | RCC_CFGR_PPRE2_DIV1;
 
     // Update the SystemCoreClock global variable
     SystemCoreClock = osc_get_sys_clock_freq() >> AHBPrescTable[(RCC->CFGR & RCC_CFGR_HPRE) >> RCC_CFGR_HPRE_Pos];
@@ -139,47 +135,6 @@ void osc_config(void) {
     // Configure the SysTick to have interrupt in 1ms time basis
     // 1U = 1 KHz
     SysTick_Config(SystemCoreClock / (1000U / 1U));
-}
-
-void osc_request_hse(void) {
-    // Enable HSE oscillator
-    RCC->CR |= RCC_CR_HSEON;
-
-    // Wait until it's stable
-    while ((RCC->CR & RCC_CR_HSERDY) == 0);
-
-    // Configure flash wait states and caching
-    FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_PRFTEN | FLASH_ACR_LATENCY_3WS;
-
-
-    // Configure PLL
-    // PLLM = 25 MHz / 25 = 1 MHz VCO input (HSE divider)
-    // PLLN = 1 MHz x 192 = 192 MHz VCO (multiplier)
-    // PLLP = 192 MHz / 2 = 96 MHz SYSCLK (SYSCLK divider)
-    // PLLQ = 192 MHz / 4 = 48 MHz (USB clock divider)
-    // PLL source = HSE
-    RCC->PLLCFGR = (25 << RCC_PLLCFGR_PLLM_Pos) |
-                   (192 << RCC_PLLCFGR_PLLN_Pos) |
-                   (0 << RCC_PLLCFGR_PLLP_Pos) |
-                   (4 << RCC_PLLCFGR_PLLQ_Pos) |
-                   RCC_PLLCFGR_PLLSRC_HSE;
-
-    // Enable PLL
-    RCC->CR |= RCC_CR_PLLON;
-    while ((RCC->CR & RCC_CR_PLLRDY) == 0);
-
-    // Configure prescalers
-    // AHB = 96 MHz
-    // APB1 = 48 MHz (<= 50 MHz max)
-    // APB2 = 96 MHz
-    RCC->CFGR = RCC_CFGR_HPRE_DIV1 |
-                RCC_CFGR_PPRE1_DIV2 |
-                RCC_CFGR_PPRE2_DIV1;
-
-    // Select PLL as system clock
-    RCC->CFGR &= ~RCC_CFGR_SW;
-    RCC->CFGR |= RCC_CFGR_SW_PLL;
-    while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
 }
 
 void osc_hse_debug(void) {

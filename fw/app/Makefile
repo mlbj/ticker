@@ -7,6 +7,7 @@ OBJDIR   = obj
 INCDIR   = include
 COMDIR   = ../common
 TUSBDIR  = $(COMDIR)/tinyusb/src
+SCPIDIR  = $(COMDIR)/libscpi/libscpi
 
 # CPU
 CPU      = cortex-m4
@@ -16,6 +17,7 @@ SRC      = $(wildcard $(SRCDIR)/*.c) $(wildcard $(COMDIR)/src/*.c)
 SRC     += $(wildcard $(TUSBDIR)/*.c) $(wildcard $(TUSBDIR)/common/*.c)
 SRC     += $(wildcard $(TUSBDIR)/device/*.c) $(TUSBDIR)/class/cdc/cdc_device.c
 SRC     += $(wildcard $(TUSBDIR)/portable/synopsys/dwc2/*.c)
+SRC     += $(wildcard $(SCPIDIR)/src/*.c)
 ASM      = $(wildcard $(SRCDIR)/*.s) $(wildcard $(COMDIR)/src/*.s)
 
 # Objects
@@ -23,7 +25,7 @@ OBJ      = $(addprefix $(OBJDIR)/,$(notdir $(SRC:.c=.o)))
 OBJ     += $(addprefix $(OBJDIR)/,$(notdir $(ASM:.s=.o)))
 
 # Includes
-INCLUDE  = -I$(INCDIR) -I$(COMDIR)/include -I$(COMDIR)/cmsis -I$(TUSBDIR)
+INCLUDE  = -I$(INCDIR) -I$(COMDIR)/include -I$(COMDIR)/cmsis -I$(TUSBDIR) -I$(SCPIDIR)/inc
 
 # Linker script
 LSCRIPT  = linker.ld
@@ -66,7 +68,7 @@ $(HEX): $(ELF)
 	$(OBJCOPY) -O ihex $< $@
 
 vpath %.c $(SRCDIR) $(COMDIR)/src $(TUSBDIR) $(TUSBDIR)/common $(TUSBDIR)/device \
-          $(TUSBDIR)/class/cdc $(TUSBDIR)/portable/synopsys/dwc2
+          $(TUSBDIR)/class/cdc $(TUSBDIR)/portable/synopsys/dwc2 $(SCPIDIR)/src
 vpath %.s $(SRCDIR) $(COMDIR)/src
 
 $(OBJDIR)/%.o: %.c

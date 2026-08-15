@@ -1,8 +1,8 @@
 .vscode
 .vscode/*
 
-app/bin/
-app/obj/
+fw/app/bin/
+fw/app/obj/
 
 *.hx
 *.cx
